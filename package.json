@@ -1,0 +1,33 @@
+{
+  "name": "simple-store",
+  "version": "1.0.0",
+  "description": "Simple store with events",
+  "main": "simple-store.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redexp/simple-store.git"
+  },
+  "keywords": [
+    "store",
+    "state"
+  ],
+  "author": "Sergii Kliuchnyk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/redexp/simple-store/issues"
+  },
+  "homepage": "https://github.com/redexp/simple-store#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3"
+  },
+  "dependencies": {
+    "simple-diff": "^1.1.0"
+  }
+}
