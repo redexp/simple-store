@@ -102,7 +102,7 @@ describe('SimpleStore', function () {
             {id: 1}
         ]);
 
-        expect(count).to.equal(3);
+        expect(count).to.equal(2);
     });
 
     it('should add items in array', function () {
@@ -202,7 +202,9 @@ describe('SimpleStore', function () {
             prop0: {
                 prop1: [
                     {id: 1},
-                    {id: 2}
+                    {id: 2},
+                    {id: 3},
+                    {id: 4}
                 ]
             }
         });
@@ -216,7 +218,22 @@ describe('SimpleStore', function () {
             expect(e.newIndex).to.be.a.number;
         });
 
-        store.moveItem('prop0.prop1', {id: 1}, 1);
+        store.moveItem('prop0.prop1', {id: 3}, 0);
+
+        expect(count).to.equal(1);
+
+        expect(store.state).to.deep.equal({
+            prop0: {
+                prop1: [
+                    {id: 3},
+                    {id: 1},
+                    {id: 2},
+                    {id: 4}
+                ]
+            }
+        });
+
+        store.moveItem('prop0.prop1', 2, 0);
 
         expect(count).to.equal(2);
 
@@ -224,20 +241,9 @@ describe('SimpleStore', function () {
             prop0: {
                 prop1: [
                     {id: 2},
-                    {id: 1}
-                ]
-            }
-        });
-
-        store.moveItem('prop0.prop1', 1, 0);
-
-        expect(count).to.equal(4);
-
-        expect(store.state).to.deep.equal({
-            prop0: {
-                prop1: [
+                    {id: 3},
                     {id: 1},
-                    {id: 2}
+                    {id: 4}
                 ]
             }
         });
