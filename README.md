@@ -4,9 +4,9 @@ simple-store
 Simple store with events
 
 ```javascript
-var SimpleStore = require('simple-store');
+var Store = require('simple-state-store');
 
-var store = new SimpleStore({
+var store = new Store({
     sidebar: {
         users: [
             {id: 1, name: 'user1'},

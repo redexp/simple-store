@@ -1,6 +1,6 @@
 var expect = require('chai').expect;
 
-var SimpleStore = require('../simple-store');
+var SimpleStore = require('../simple-state-store');
 
 describe('SimpleStore', function () {
     it('should handle events', function () {

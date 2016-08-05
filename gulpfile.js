@@ -4,7 +4,7 @@ var rename = require('gulp-rename');
 var uglify = require('gulp-uglify');
 
 gulp.task('default', function() {
-    gulp.src('simple-store.js')
+    gulp.src('simple-state-store.js')
         .pipe(replace('var _DEV_ = true;', ''))
         .pipe(uglify({
             mangle: false,
@@ -15,7 +15,7 @@ gulp.task('default', function() {
                 unused: true
             }
         }))
-        .pipe(rename('simple-store.min.js'))
+        .pipe(rename('simple-state-store.min.js'))
         .pipe(gulp.dest('./'))
     ;
 });

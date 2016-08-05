@@ -1,8 +1,8 @@
 {
-  "name": "simple-store",
+  "name": "simple-state-store",
   "version": "1.0.0",
   "description": "Simple store with events",
-  "main": "simple-store.js",
+  "main": "simple-state-store.js",
   "directories": {
     "test": "test"
   },
