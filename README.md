@@ -1,5 +1,5 @@
-simple-store
-============
+simple-state-store
+==================
 
 Simple store with events
 
@@ -39,9 +39,9 @@ Open form with user user2
 
 # Install
 
-`npm i simple-store`
+`npm i simple-state-store`
 
-`bower i simple-store`
+`bower i simple-state-store`
 
 Lib will look for CommonJS or AMD or will be added global class called `SimpleStore`.
 
