@@ -1,0 +1,22 @@
+{
+  "name": "simple-store",
+  "main": "simple-store.js",
+  "version": "1.0.0",
+  "homepage": "https://github.com/redexp/simple-store",
+  "authors": [
+    "Sergii Kliuchnyk <sergiikliuchnyk@gmail.com>"
+  ],
+  "description": "simple store with events",
+  "keywords": [
+    "diff"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "test"
+  ],
+  "dependencies": {
+    "simple-diff": "^1.2.0"
+  },
+  "devDependencies": {}
+}

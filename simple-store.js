@@ -158,6 +158,17 @@
         return this;
     };
 
+    SimpleStore.prototype.getItem = function (path, props) {
+        var array = this.get(path),
+            index = findIndex(array, props);
+
+        return array[index];
+    };
+
+    SimpleStore.prototype.getIndex = function (path, props) {
+        return findIndex(this.get(path), props);
+    };
+
     SimpleStore.prototype.addItem = function (path, item, index) {
         if (isString(path)) {
             path = stringToPath(path);

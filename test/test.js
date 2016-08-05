@@ -105,6 +105,32 @@ describe('SimpleStore', function () {
         expect(count).to.equal(2);
     });
 
+    it('should get item by props', function () {
+        var store = new SimpleStore({
+            prop0: {
+                prop1: [
+                    {id: 1, name: 'name1'},
+                    {id: 2, name: 'name2'}
+                ]
+            }
+        });
+
+        expect(store.getItem('prop0.prop1', {id: 2})).to.equal(store.state.prop0.prop1[1]);
+    });
+
+    it('should get item by props', function () {
+        var store = new SimpleStore({
+            prop0: {
+                prop1: [
+                    {id: 1, name: 'name1'},
+                    {id: 2, name: 'name2'}
+                ]
+            }
+        });
+
+        expect(store.getIndex('prop0.prop1', {id: 2})).to.equal(1);
+    });
+
     it('should add items in array', function () {
         var store = new SimpleStore({
             prop0: {
