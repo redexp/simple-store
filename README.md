@@ -61,7 +61,7 @@ Holds current state of the store.
 
 ## `.options`
 
-Holds options passed to constructor.
+Holds options passed to the constructor.
 
 ## `.events`
 

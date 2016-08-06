@@ -4,7 +4,9 @@ var rename = require('gulp-rename');
 var uglify = require('gulp-uglify');
 
 gulp.task('default', function() {
-    gulp.src('simple-state-store.js')
+    var info = require('./package');
+
+    gulp.src(info.main)
         .pipe(replace('var _DEV_ = true;', ''))
         .pipe(uglify({
             mangle: false,
@@ -15,7 +17,7 @@ gulp.task('default', function() {
                 unused: true
             }
         }))
-        .pipe(rename('simple-state-store.min.js'))
+        .pipe(rename(info.main.replace(/\.js$/, '.min.js')))
         .pipe(gulp.dest('./'))
     ;
 });
