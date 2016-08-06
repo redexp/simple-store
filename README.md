@@ -1,6 +1,8 @@
 simple-state-store
 ==================
 
+[![Build Status](https://travis-ci.org/redexp/simple-store.svg?branch=master)](https://travis-ci.org/redexp/simple-store)
+
 Simple store with events
 
 ```javascript
