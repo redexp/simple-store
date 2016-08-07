@@ -9,7 +9,7 @@
 }(this, function (diff) {
 
     function SimpleStore(state, options) {
-        this.state = state;
+        this.state = state || {};
         this.options = options || {};
         this.events = {};
     }
@@ -68,7 +68,7 @@
         return curState;
     };
 
-    SimpleStore.prototype.on = function (event, path, callback) {
+    SimpleStore.prototype.on = function (events, path, callback) {
         if (typeof path === 'function') {
             callback = path;
             path = '**';
@@ -78,22 +78,52 @@
             path = pathToString(path);
         }
 
-        if (!this.events[event]) {
-            this.events[event] = {};
-        }
+        events = events.split(/\s+/);
 
-        if (!this.events[event][path]) {
-            this.events[event][path] = [];
-        }
+        for (var i = 0, len = events.length, event; i < len; i++) {
+            event = events[i];
 
-        this.events[event][path].push(callback);
+            if (!this.events[event]) {
+                this.events[event] = {};
+            }
+
+            if (!this.events[event][path]) {
+                this.events[event][path] = [];
+            }
+
+            this.events[event][path].push(callback);
+        }
 
         return this;
     };
 
-    SimpleStore.prototype.off = function (event, path, callback) {
+    SimpleStore.prototype.off = function (events, path, callback) {
         if (arguments.length === 0) {
             this.events = {};
+            return this;
+        }
+
+        var event;
+
+        if (typeof events === 'object') {
+            if (typeof path === 'function') {
+                callback = path;
+            }
+
+            path = pathToString(events);
+
+            for (event in this.events) {
+                if (!has(this.events, event)) continue;
+                if (!has(this.events[event], path)) continue;
+
+                if (callback) {
+                    removeItem(this.events[event][path], callback);
+                }
+                else {
+                    delete this.events[event][path];
+                }
+            }
+
             return this;
         }
 
@@ -106,16 +136,19 @@
             path = '**';
         }
 
-        if (this.events[event]) {
+        events = events.split(/\s+/);
+
+        for (var i = 0, len = events.length; i < len; i++) {
+            event = events[i];
+
+            if (!this.events[event]) continue;
+
             if (typeof path === 'undefined') {
                 delete this.events[event];
             }
             else if (this.events[event][path]) {
                 if (callback) {
-                    var index;
-                    while ((index = this.events[event][path].indexOf(callback)) > -1) {
-                        this.events[event][path].splice(index, 1);
-                    }
+                    removeItem(this.events[event][path], callback);
                 }
                 else {
                     delete this.events[event][path];
@@ -126,11 +159,16 @@
         return this;
     };
 
-    SimpleStore.prototype.trigger = function (event, path, data) {
+    SimpleStore.prototype.trigger = function (event, path) {
+        var args;
+
         if (typeof event === 'object') {
-            data = event;
-            event = data.type;
-            path = data.newPath;
+            args = Array.prototype.slice.call(arguments);
+            event = args[0].type;
+            path = args[0].path || args[0].newPath;
+        }
+        else {
+            args = Array.prototype.slice.call(arguments, 2);
         }
 
         if (typeof path === 'object') {
@@ -139,19 +177,17 @@
 
         var events = this.events[event];
 
-        if (events) {
-            var store = this;
+        if (!events) return this;
 
-            if (events[path]) {
-                events[path].forEach(function (callback) {
-                    callback.call(store, data);
-                });
-            }
+        var paths = path === '**' ? [path] : [path, '**'];
 
-            if (path !== '**' && events['**']) {
-                events['**'].forEach(function (callback) {
-                    callback.call(store, data);
-                });
+        for (var i = 0, len = paths.length; i < len; i++) {
+            path = paths[i];
+
+            if (!events[path]) continue;
+
+            for (var j = 0, length = events[path].length; j < length; j++) {
+                events[path][j].apply(this, args);
             }
         }
 
@@ -264,13 +300,17 @@
         for (var i = 1, len = arguments.length; i < len; i++) {
             var source = arguments[i];
             for (var prop in source) {
-                if (!source.hasOwnProperty(prop)) continue;
+                if (!has(source, prop)) continue;
 
                 target[prop] = source[prop];
             }
         }
 
         return target;
+    }
+
+    function has(obj, prop) {
+        return !!obj && obj.hasOwnProperty(prop);
     }
 
     function findIndex(array, props) {
@@ -282,7 +322,7 @@
             item = array[i];
 
             for (var prop in props) {
-                if (!props.hasOwnProperty(prop)) continue;
+                if (!has(props, prop)) continue;
 
                 if (item[prop] !== props[prop]) continue next;
             }
@@ -291,6 +331,13 @@
         }
 
         return -1;
+    }
+
+    function removeItem(array, item) {
+        var index;
+        while ((index = array.indexOf(item)) > -1) {
+            array.splice(index, 1);
+        }
     }
 
 }));

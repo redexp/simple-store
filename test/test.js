@@ -1,4 +1,7 @@
 var expect = require('chai').expect;
+var sinon = require('sinon');
+
+require('chai').use(require('sinon-chai'));
 
 var SimpleStore = require('../simple-state-store');
 
@@ -69,6 +72,89 @@ describe('SimpleStore', function () {
         store.off();
         store.set('prop0.prop1', 'name01');
         expect(count).to.equal(0);
+    });
+
+    it('should handle multiple events', function () {
+        var store = new SimpleStore();
+
+        var callback = sinon.spy();
+
+        store.on('test1 test2', callback);
+        store.trigger('test1', '**', 'one');
+
+        expect(callback)
+            .to.have.been.callCount(1)
+            .and.have.been.calledWith('one')
+        ;
+
+        store.trigger('test2', '**', 'two');
+
+        expect(callback)
+            .to.have.been.callCount(2)
+            .and.have.been.calledWith('two')
+        ;
+    });
+
+    it('should off events by path only', function () {
+        var store = new SimpleStore();
+
+        var callback = sinon.spy();
+        store.on('test1', 'prop1', callback);
+        store.on('test2', 'prop2', callback);
+        store.on('test3', 'prop2', callback);
+
+        var callback2 = sinon.spy();
+        store.on('test4', 'prop2', callback2);
+
+        store.trigger('test1', 'prop1');
+        expect(callback).to.have.been.callCount(1);
+        store.trigger('test2', 'prop2');
+        expect(callback).to.have.been.callCount(2);
+        store.trigger('test3', 'prop2');
+        expect(callback).to.have.been.callCount(3);
+        store.trigger('test4', 'prop2');
+        expect(callback2).to.have.been.callCount(1);
+
+        store.off(['prop2'], callback2);
+
+        store.trigger('test1', 'prop1');
+        expect(callback).to.have.been.callCount(4);
+        store.trigger('test2', 'prop2');
+        expect(callback).to.have.been.callCount(5);
+        store.trigger('test3', 'prop2');
+        expect(callback).to.have.been.callCount(6);
+        store.trigger('test4', 'prop2');
+        expect(callback2).to.have.been.callCount(1);
+
+        store.off(['prop2']);
+
+        store.trigger('test1', 'prop1');
+        expect(callback).to.have.been.callCount(7);
+        store.trigger('test2', 'prop2');
+        expect(callback).to.have.been.callCount(7);
+        store.trigger('test3', 'prop2');
+        expect(callback).to.have.been.callCount(7);
+        store.trigger('test4', 'prop2');
+        expect(callback2).to.have.been.callCount(1);
+    });
+
+    it('should trigger and catch multiple arguments', function () {
+        var store = new SimpleStore();
+
+        var callback = sinon.spy();
+        store.on('test', callback);
+        store.trigger('test', '**', 'one', 'two', 'three');
+
+        expect(callback).to.have.been.calledWith('one', 'two', 'three');
+
+        store.on('test2', callback);
+        var event = {
+            type: 'test2',
+            path: '**'
+        };
+        store.trigger(event, 'one', 'two');
+
+        expect(callback).to.have.been.calledWith(event, 'one', 'two');
     });
 
     it('should handle set objects', function () {

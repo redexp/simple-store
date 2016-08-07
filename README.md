@@ -49,7 +49,7 @@ Lib will look for CommonJS or AMD or will be added global class called `SimpleSt
 
 # Constructor
 
-`new SimleStore(state, options)`
+`new SimleStore([state,] [options])`
 
 ## Constructor options
 
@@ -107,12 +107,14 @@ Regular off function to remove observers.
  * `.off(event)` - remove all observers of given event name
  * `.off(event, path)` - remove all observers of given event name in given path
  * `.off(event, path, callback)` - remove exac observer
+ * `.off(pathAsArray)` - remove all events of given path
+ * `.off(pathAsArray, callback)` - remove all observers of given path
  
-## `.trigger(event, path, data)`
+## `.trigger(event, path, [data1, ...])`
 
- * `{String|Object} event` - event name or event object like in [simple-diff](https://github.com/redexp/simple-diff). If event object given then all other arguments skipped, because it already has path and data as it self
+ * `{String|Object} event` - event name or event object with structure like `{type: 'event-name', path: array || string}`. If event object given then all arguments will be passed to observers.
  * `{String|Array} path` - path to property in store state.
- * `{*} data` - any data for observers
+ * `{*} data1` - any data for observers
  
 ## `.getItem(path, props)`
  
