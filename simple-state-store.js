@@ -24,19 +24,20 @@
             path = stringToPath(path);
         }
 
-        var oldState = this.state,
-            curState = this.state;
+        path = absolutePath(this.state, path);
 
-        for (var i = 0, len = path.length, prop; i < len; i++) {
-            prop = path[i];
+        var parent = this.get(path.slice(0, path.length - 1)),
+            oldState = this.get(path);
 
-            if (i + 1 === len) {
-                oldState = curState[prop];
-                curState[prop] = newState;
-            }
-            else {
-                curState = curState[prop];
-            }
+        if (path.length === 0) {
+            oldState = this.state;
+            this.state = newState;
+        }
+        else {
+            var last = path[path.length - 1];
+            parent = this.get(path.slice(0, path.length - 1));
+            oldState = parent[last];
+            parent[last] = newState;
         }
 
         var store = this;
@@ -52,46 +53,87 @@
         return this;
     };
 
-    SimpleStore.prototype.get = function (path) {
+    SimpleStore.prototype.get = function (path, index) {
         if (isString(path)) {
             path = stringToPath(path);
         }
 
+        if (arguments.length === 1) {
+            index = path.length - 1;
+        }
+
         var curState = this.state;
 
-        for (var i = 0, len = path.length, prop; i < len; i++) {
+        for (var i = 0, prop; i <= index; i++) {
             prop = path[i];
+
+            if (isObject(prop)) {
+                prop = findIndex(curState, prop);
+            }
+
+            if (!has(curState, prop)) return;
 
             curState = curState[prop];
         }
 
         return curState;
     };
+    
+    var EVENTS = '__events__',
+        RULES = '__rules__';
 
     SimpleStore.prototype.on = function (events, path, callback) {
-        if (typeof path === 'function') {
-            callback = path;
-            path = '**';
-        }
-
-        if (typeof path === 'object') {
-            path = pathToString(path);
-        }
-
         events = events.split(/\s+/);
+
+        if (isString(path)) {
+            path = stringToPath(path);
+        }
 
         for (var i = 0, len = events.length, event; i < len; i++) {
             event = events[i];
 
-            if (!this.events[event]) {
-                this.events[event] = {};
+            var ev = this.events;
+
+            if (!ev[event]) {
+                ev[event] = {};
             }
 
-            if (!this.events[event][path]) {
-                this.events[event][path] = [];
+            ev = ev[event];
+
+            for (var j = 0, n = path.length, item; j < n; j++) {
+                item = path[j];
+
+                if (isObject(item)) {
+                    var rules = ev[RULES];
+                    
+                    if (!rules) {
+                        ev[RULES] = rules = [];
+                    }
+                    
+                    var ruleIndex = findRuleIndex(rules, item);
+                    
+                    if (ruleIndex > -1) {
+                        ev = rules[ruleIndex][1];
+                    }
+                    else {
+                        rules.push([item, ev = {}]);
+                    }
+                    
+                    continue;
+                }
+
+                if (!ev[item]) {
+                    ev[item] = {};
+                }
+
+                ev = ev[item];
             }
 
-            this.events[event][path].push(callback);
+            if (!ev[EVENTS]) {
+                ev[EVENTS] = [];
+            }
+
+            ev[EVENTS].push(callback);
         }
 
         return this;
@@ -105,54 +147,64 @@
 
         var event;
 
-        if (typeof events === 'object') {
-            if (typeof path === 'function') {
-                callback = path;
-            }
-
-            path = pathToString(events);
-
+        if (isObject(events)) {
             for (event in this.events) {
-                if (!has(this.events, event)) continue;
-                if (!has(this.events[event], path)) continue;
-
-                if (callback) {
-                    removeItem(this.events[event][path], callback);
-                }
-                else {
-                    delete this.events[event][path];
-                }
+                this.off(event, events, path);
             }
-
             return this;
-        }
-
-        if (typeof path === 'object') {
-            path = pathToString(path);
-        }
-
-        if (typeof path === 'function') {
-            callback = path;
-            path = '**';
         }
 
         events = events.split(/\s+/);
 
-        for (var i = 0, len = events.length; i < len; i++) {
+        if (isString(path)) {
+            path = stringToPath(path);
+        }
+
+        events: for (var i = 0, len = events.length; i < len; i++) {
             event = events[i];
 
-            if (!this.events[event]) continue;
+            var ev = this.events;
 
-            if (typeof path === 'undefined') {
-                delete this.events[event];
+            if (!ev[event]) continue;
+
+            if (!path) {
+                ev[event] = {};
+                continue;
             }
-            else if (this.events[event][path]) {
-                if (callback) {
-                    removeItem(this.events[event][path], callback);
+
+            ev = ev[event];
+
+            for (var j = 0, n = path.length, item; j < n; j++) {
+                item = path[j];
+                
+                if (isObject(item)) {
+                    var rules = ev[RULES];
+                    
+                    if (!rules) continue events;
+                    
+                    var ruleIndex = findRuleIndex(rules, item);
+                    
+                    if (ruleIndex > -1) {
+                        ev = rules[ruleIndex][1];
+                    }
+                    else {
+                        continue events;
+                    }
                 }
                 else {
-                    delete this.events[event][path];
+                    if (!ev[item]) continue events;
+
+                    ev = ev[item];
                 }
+            }
+
+            if (!ev[EVENTS]) continue;
+
+            if (callback) {
+                removeItem(ev[EVENTS], callback);
+            }
+            else {
+                ev[EVENTS] = [];
             }
         }
 
@@ -162,7 +214,7 @@
     SimpleStore.prototype.trigger = function (event, path) {
         var args;
 
-        if (typeof event === 'object') {
+        if (isObject(event)) {
             args = Array.prototype.slice.call(arguments);
             event = args[0].type;
             path = args[0].path || args[0].newPath;
@@ -171,23 +223,46 @@
             args = Array.prototype.slice.call(arguments, 2);
         }
 
-        if (typeof path === 'object') {
-            path = pathToString(path);
+        if (!this.events[event]) return this;
+
+        if (isString(path)) {
+            path = stringToPath(path);
         }
 
-        var events = this.events[event];
+        var store = this;
 
-        if (!events) return this;
+        trigger(this.events[event], path, 0);
 
-        var paths = path === '**' ? [path] : [path, '**'];
+        function trigger(events, path, index) {
+            if (index === path.length && has(events, EVENTS)) {
+                for (var i = 0, len = events[EVENTS].length, cb; i < len; i++) {
+                    cb = events[EVENTS][i];
+                    cb.apply(store, args);
+                }
+                return;
+            }
 
-        for (var i = 0, len = paths.length; i < len; i++) {
-            path = paths[i];
+            if (events[path[index]]) {
+                trigger(events[path[index]], path, index + 1);
+            }
 
-            if (!events[path]) continue;
+            if (events['*']) {
+                trigger(events['*'], path, index + 1);
+            }
 
-            for (var j = 0, length = events[path].length; j < length; j++) {
-                events[path][j].apply(this, args);
+            var rules = events[RULES];
+            
+            if (rules) {
+                var obj = store.get(path, index);
+
+                if (!obj) return;
+
+                for (var rI = 0, rLen = rules.length; rI < rLen; rI++) {
+                    if (isEqual(obj, rules[rI][0])) {
+                        trigger(rules[rI][1], path, index + 1);
+                        break;
+                    }
+                }
             }
         }
 
@@ -231,7 +306,7 @@
 
         var newArray = [].concat(this.get(path));
 
-        if (typeof index === 'object') {
+        if (isObject(index)) {
             index = findIndex(newArray, index);
         }
 
@@ -249,7 +324,7 @@
 
         var array = this.get(path);
 
-        if (typeof from === 'object') {
+        if (isObject(from)) {
             from = findIndex(array, from);
 
             if (from === -1) {
@@ -284,16 +359,31 @@
         return typeof value === 'string';
     }
 
-    function pathToString(path) {
-        return path.map(numberToAsterisk).join('.');
+    function isObject(value) {
+        return !!value && typeof value === 'object';
     }
 
-    function stringToPath(path) {
-        return path ? path.split('.') : [];
+    function stringToPath(str) {
+        return !str ? [] : str.split('.');
     }
 
-    function numberToAsterisk(value) {
-        return typeof value === 'number' ? '*' : value;
+    function absolutePath(state, path) {
+        path = [].concat(path);
+
+        for (var i = 0, len = path.length, prop; i <= len; i++) {
+            prop = path[i];
+
+            if (isObject(prop)) {
+                path[i] = prop = findIndex(state, prop);
+                continue;
+            }
+
+            if (!has(state, prop)) return path;
+
+            state = state[prop];
+        }
+
+        return path;
     }
 
     function extend(target) {
@@ -313,24 +403,44 @@
         return !!obj && obj.hasOwnProperty(prop);
     }
 
-    function findIndex(array, props) {
-        var index = array.indexOf(props);
-
-        if (index > -1) return index;
-
-        next: for (var i = 0, len = array.length, item; i < len; i++) {
+    function findIndex(array, props, fullEqual) {
+        for (var i = 0, len = array.length, item; i < len; i++) {
             item = array[i];
-
-            for (var prop in props) {
-                if (!has(props, prop)) continue;
-
-                if (item[prop] !== props[prop]) continue next;
-            }
-
-            return i;
+            
+            if (isEqual(item, props, fullEqual)) return i;
         }
 
         return -1;
+    }
+    
+    function findRuleIndex(rules, props) {
+        for (var i = 0, len = rules.length; i < len; i++) {
+            if (isEqual(rules[i][0], props, true)) return i
+        }
+        
+        return -1;
+    }
+    
+    function isEqual(item, props, fullEqual) {
+        if (item === props) return true;
+        
+        var prop;
+        
+        for (prop in props) {
+            if (!has(props, prop)) continue;
+
+            if (item[prop] !== props[prop]) return false;
+        }
+
+        if (fullEqual) {
+            for (prop in item) {
+                if (!has(item, prop)) continue;
+
+                if (item[prop] !== props[prop]) return false;
+            }
+        }
+        
+        return true;
     }
 
     function removeItem(array, item) {

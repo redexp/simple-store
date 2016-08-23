@@ -45,7 +45,7 @@ Open form with user user2
 
 `bower i simple-state-store`
 
-Lib will look for CommonJS or AMD or will be added global class called `SimpleStore`.
+Lib will look for CommonJS or AMD or will add global class called `SimpleStore`.
 
 # Constructor
 
@@ -65,54 +65,50 @@ Holds current state of the store.
 
 Holds options passed to the constructor.
 
-## `.events`
-
-Holds events which structure is like
-```
-{
-    [event]: {
-        [path]: [
-            callback,
-            ...
-        ]
-    }
-}
-```
-
 # Methods
-
-## `.set([path,] data)`
-
-When you call it with object it will look deeply into it and compare with old object in given path and will trigger event not once but for all changed deep properties.
-
- * `{String|Array} path` - path to property in store state. Can be as dots divided string like `prop1.prop2` or array `['prop1', 'prop2']`. If you want to change root state you can use or empty string or empty array or just skip this argument like `.set(newState)`
- * `{*} data` - new data for given path
 
 ## `.get(path)`
 
-Returns data for given path. Instead of it you can get data just with `.state` property like `store.state.sidebar.users`
-
  * `{String|Array} path` - path to property in store state.
 
-## `.on(event, [path,] callback)`
+Returns data for given path. Path can be as dots divided string like `'prop1.prop2'` or an array `['prop1', 'prop2']`. You can use object in array path like `['prop1', {id: 2}, 'name']` which means that `prop1` is an array and object `{id: 2}` should be replaced with index of item which match this object. 
 
- * `{String} event` - name of event
- * `{String|Array} path` - path to property in store state. If you want handle events from all objects in array you can use asterisk instead of index `users.*.name`. If you want handle all events you can use `**` or just skip this argument.
+## `.set([path,] data)`
+
+ * `{String|Array} path` - path to property in store state. If you want to change root state you can use or empty string or empty array or just skip this argument like `.set(newState)`
+ * `{*} data` - new data for given path
+
+When you call it with object it will look deeply into it and compare with old object in given path and will trigger event not once but for all changed deep properties. So you can modify properties in same object like this
+
+```javascript
+store.set('prop1.prop2.name', 'Jack');
+store.set('prop1.prop2.age', 30);
+// or
+store.set('prop1.prop2', {
+    name: 'Jack',
+    age: 30
+});
+```
+
+## `.on(events, path, callback)`
+
+ * `{String} events` - space divided events names
+ * `{String|Array} path` - path to property in store state. Also you can use `*` in path which will match any property name. 
  * `{Function} callback` - observer function
   
-## `.off([event,] [path,] [callback])`
+## `.off([events,] [path,] [callback])`
 
 Regular off function to remove observers.
 
- * `.off(event)` - remove all observers of given event name
- * `.off(event, path)` - remove all observers of given event name in given path
- * `.off(event, path, callback)` - remove exac observer
+ * `.off(events)` - remove all observers of given space divided events names
+ * `.off(events, path)` - remove all observers of given event name in given path
+ * `.off(events, path, callback)` - remove exact observer
  * `.off(pathAsArray)` - remove all events of given path
- * `.off(pathAsArray, callback)` - remove all observers of given path
+ * `.off(pathAsArray, callback)` - remove exact observer from all events of given path
  
 ## `.trigger(event, path, [data1, ...])`
 
- * `{String|Object} event` - event name or event object with structure like `{type: 'event-name', path: array || string}`. If event object given then all arguments will be passed to observers.
+ * `{String|Object} event` - event name or event object with structure like `{type: 'event-name', path: array || string}`. If event object given then all arguments passed to this method will go to observers.
  * `{String|Array} path` - path to property in store state.
  * `{*} data1` - any data for observers
  
@@ -121,7 +117,7 @@ Regular off function to remove observers.
 Find object by given props in array by given path.
  
  * `{String|Array} path` - path to array.
- * `{Object} props` - criteria props to find object.
+ * `{Object} props` - criteria props to find an object.
  
 ## `.getIndex(path, props)`
 
@@ -151,4 +147,4 @@ Will change position of item in array by given path
 
  * `{String|Array} path` - path to array.
  * `{Number|Object} indexOrProps` - index or props to find item index.
- * `{Number} newIndex` - new item position. 
+ * `{Number} newIndex` - new item index. 

@@ -35,7 +35,7 @@ describe('SimpleStore', function () {
             expect(e.newPath).to.deep.equal(['prop0', 'prop1']);
         });
 
-        store.on('change', function (e) {
+        store.on('change', ['prop0', '*'], function (e) {
             count++;
 
             expect(e.newPath).to.deep.equal(['prop0', 'prop1']);
@@ -59,19 +59,6 @@ describe('SimpleStore', function () {
         store.off('change');
         store.set('prop0.prop1', 'name00001');
         expect(count).to.equal(0);
-
-        store.on('change', function (e) {
-            count++;
-        });
-
-        count = 0;
-        store.set('prop0.prop1', 'name1');
-        expect(count).to.equal(1);
-
-        count = 0;
-        store.off();
-        store.set('prop0.prop1', 'name01');
-        expect(count).to.equal(0);
     });
 
     it('should handle multiple events', function () {
@@ -79,15 +66,15 @@ describe('SimpleStore', function () {
 
         var callback = sinon.spy();
 
-        store.on('test1 test2', callback);
-        store.trigger('test1', '**', 'one');
+        store.on('test1 test2', [], callback);
+        store.trigger('test1', [], 'one');
 
         expect(callback)
             .to.have.been.callCount(1)
             .and.have.been.calledWith('one')
         ;
 
-        store.trigger('test2', '**', 'two');
+        store.trigger('test2', [], 'two');
 
         expect(callback)
             .to.have.been.callCount(2)
@@ -142,19 +129,48 @@ describe('SimpleStore', function () {
         var store = new SimpleStore();
 
         var callback = sinon.spy();
-        store.on('test', callback);
-        store.trigger('test', '**', 'one', 'two', 'three');
+        store.on('test', [], callback);
+        store.trigger('test', [], 'one', 'two', 'three');
 
         expect(callback).to.have.been.calledWith('one', 'two', 'three');
 
-        store.on('test2', callback);
+        store.on('test2', [], callback);
         var event = {
             type: 'test2',
-            path: '**'
+            path: []
         };
         store.trigger(event, 'one', 'two');
 
         expect(callback).to.have.been.calledWith(event, 'one', 'two');
+    });
+
+    it('should handle objects in path', function () {
+        var store = new SimpleStore({
+            prop0: [
+                {id: 1, name: 'value1'},
+                {id: 2, name: 'value2'},
+                {id: 3, name: 'value3'}
+            ]
+        });
+
+        var cb = sinon.spy();
+        store.on('change', ['prop0', {id: 2}, 'name'], cb);
+
+        store.set(['prop0', {id: 2}, 'name'], 'value02');
+
+        expect(cb).to.have.been.callCount(1);
+        expect(cb.args[0][0].newPath).to.deep.equal(['prop0', 1, 'name']);
+        expect(cb.args[0][0].oldValue).to.equal('value2');
+        expect(cb.args[0][0].newValue).to.equal('value02');
+
+        store.moveItem('prop0', {id: 2}, 0);
+
+        store.set(['prop0', {id: 2}, 'name'], 'value002');
+
+        expect(cb).to.have.been.callCount(2);
+        expect(cb.args[1][0].newPath).to.deep.equal(['prop0', 0, 'name']);
+        expect(cb.args[1][0].oldValue).to.equal('value02');
+        expect(cb.args[1][0].newValue).to.equal('value002');
     });
 
     it('should handle set objects', function () {
