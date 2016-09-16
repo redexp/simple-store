@@ -8,23 +8,19 @@
     }
 }(this, function (diff) {
 
-    function SimpleStore(state, options) {
+    function Store(state, options) {
         this.state = state || {};
         this.options = options || {};
         this.events = {};
     }
 
-    SimpleStore.prototype.set = function (path, newState) {
+    Store.prototype.set = function (path, newState) {
         if (arguments.length === 1) {
             newState = path;
             path = [];
         }
 
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
-
-        path = absolutePath(this.state, path);
+        path = absolutePath(this.state, ensurePath(path));
 
         var parent = this.get(path.slice(0, path.length - 1)),
             oldState = this.get(path);
@@ -53,10 +49,8 @@
         return this;
     };
 
-    SimpleStore.prototype.get = function (path, index) {
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
+    Store.prototype.get = function (path, index) {
+        path = ensurePath(path);
 
         if (arguments.length === 1) {
             index = path.length - 1;
@@ -78,16 +72,25 @@
 
         return curState;
     };
+
+    Store.prototype.remove = function (path) {
+        path = ensurePath(path);
+
+        var parent = path.slice(0, path.length - 1),
+            prop = path[path.length - 1];
+
+        var state = extend({}, this.get(parent));
+        delete state[prop];
+        this.set(parent, state);
+    };
     
     var EVENTS = '__events__',
         RULES = '__rules__';
 
-    SimpleStore.prototype.on = function (events, path, callback) {
+    Store.prototype.on = function (events, path, callback) {
         events = events.split(/\s+/);
 
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
+        path = ensurePath(path);
 
         for (var i = 0, len = events.length, event; i < len; i++) {
             event = events[i];
@@ -139,7 +142,7 @@
         return this;
     };
 
-    SimpleStore.prototype.off = function (events, path, callback) {
+    Store.prototype.off = function (events, path, callback) {
         if (arguments.length === 0) {
             this.events = {};
             return this;
@@ -156,8 +159,8 @@
 
         events = events.split(/\s+/);
 
-        if (isString(path)) {
-            path = stringToPath(path);
+        if (typeof path !== 'undefined') {
+            path = ensurePath(path);
         }
 
         events: for (var i = 0, len = events.length; i < len; i++) {
@@ -211,7 +214,7 @@
         return this;
     };
 
-    SimpleStore.prototype.trigger = function (event, path) {
+    Store.prototype.trigger = function (event, path) {
         var args;
 
         if (isObject(event)) {
@@ -225,9 +228,7 @@
 
         if (!this.events[event]) return this;
 
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
+        path = ensurePath(path);
 
         var store = this;
 
@@ -269,21 +270,33 @@
         return this;
     };
 
-    SimpleStore.prototype.getItem = function (path, props) {
+    Store.prototype.getIdProp = function (path) {
+        path = ensurePath(path);
+
+        var ops = this.options;
+
+        return (
+            (ops.idProps &&
+            (
+                ops.idProps[path.map(numberToAsterisk).join('.')] ||
+                ops.idProps[path.join('.')]
+            )) || ops.idProp || 'id'
+        );
+    };
+
+    Store.prototype.getItem = function (path, props) {
         var array = this.get(path),
             index = findIndex(array, props);
 
         return array[index];
     };
 
-    SimpleStore.prototype.getIndex = function (path, props) {
+    Store.prototype.getIndex = function (path, props) {
         return findIndex(this.get(path), props);
     };
 
-    SimpleStore.prototype.addItem = function (path, item, index) {
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
+    Store.prototype.addItem = function (path, item, index) {
+        path = ensurePath(path);
 
         var newArray = [].concat(this.get(path));
 
@@ -299,10 +312,8 @@
         return this;
     };
 
-    SimpleStore.prototype.removeItem = function (path, index) {
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
+    Store.prototype.removeItem = function (path, index) {
+        path = ensurePath(path);
 
         var newArray = [].concat(this.get(path));
 
@@ -317,10 +328,8 @@
         return this;
     };
 
-    SimpleStore.prototype.moveItem = function (path, from, to) {
-        if (isString(path)) {
-            path = stringToPath(path);
-        }
+    Store.prototype.moveItem = function (path, from, to) {
+        path = ensurePath(path);
 
         var array = this.get(path);
 
@@ -353,18 +362,14 @@
         return this;
     };
 
-    return SimpleStore;
-
-    function isString(value) {
-        return typeof value === 'string';
-    }
+    return Store;
 
     function isObject(value) {
         return !!value && typeof value === 'object';
     }
 
-    function stringToPath(str) {
-        return !str ? [] : str.split('.');
+    function ensurePath(path) {
+        return !path ? [] : typeof path === 'string' ? path.split('.') : path;
     }
 
     function absolutePath(state, path) {
@@ -448,6 +453,10 @@
         while ((index = array.indexOf(item)) > -1) {
             array.splice(index, 1);
         }
+    }
+
+    function numberToAsterisk(v) {
+        return typeof v === 'number' ? '*' : v;
     }
 
 }));

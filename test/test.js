@@ -207,6 +207,51 @@ describe('SimpleStore', function () {
         expect(count).to.equal(2);
     });
 
+    it('should remove prop from object', function () {
+        var store = new SimpleStore({
+            user: {
+                name: 'test'
+            }
+        });
+
+        expect(store.state).to.deep.equal({
+            user: {
+                name: 'test'
+            }
+        });
+
+        var cb = sinon.spy(function (e) {
+            expect(e.oldPath).to.deep.equal(['user', 'name']);
+        });
+
+        store.on('remove', ['user', 'name'], cb);
+
+        store.remove('user.name');
+
+        expect(store.state).to.deep.equal({
+            user: {}
+        });
+
+        expect(cb).to.be.callCount(1);
+    });
+
+    it('should return id prop by path', function () {
+        var store = new SimpleStore({}, {
+            idProp: '_id',
+            idProps: {
+                'user.friends': 'name'
+            }
+        });
+
+        expect(store.getIdProp()).to.equal('_id');
+        expect(store.getIdProp('list')).to.equal('_id');
+        expect(store.getIdProp(['user', 'friends'])).to.equal('name');
+
+        store = new SimpleStore();
+        expect(store.getIdProp()).to.equal('id');
+        expect(store.getIdProp('user.friends')).to.equal('id');
+    });
+
     it('should get item by props', function () {
         var store = new SimpleStore({
             prop0: {

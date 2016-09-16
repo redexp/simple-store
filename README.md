@@ -90,6 +90,35 @@ store.set('prop1.prop2', {
 });
 ```
 
+## `.remove(path)`
+ 
+ * `{String|Array} path` - path to property in store state.
+
+Removes property in state and triggers `remove` event.
+
+## `.getIdProp([path])`
+
+ * `{String|Array} path` - path to property in store state.
+ 
+Will return name of id property by comparing your `path` with store config
+
+```javascript
+var store = new SimpleStateStore({list: [], user: {friends: []}}, {
+    idProp: "_id", // default is "id"
+    idProps: {
+        'user.friends': 'cid',
+        'user.friends.*.followers': 'id',
+    }
+});
+
+store.getIdProp(); // => "_id"
+store.getIdProp('list'); // => "_id"
+store.getIdProp('user.friends'); // => "cid"
+store.getIdProp('user.friends.*.followers'); // => "id"
+store.getIdProp('user.friends.1.followers'); // => "id"
+store.getIdProp('user.friends.*.followers.*.likes'); // => "_id"
+```
+
 ## `.on(events, path, callback)`
 
  * `{String} events` - space divided events names
